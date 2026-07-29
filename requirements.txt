@@ -1,0 +1,9 @@
+telethon
+cryptg
+requests
+flask
+yt-dlp
+youtube-search-python
+spotdl
+spotify
+browser-cookie3
