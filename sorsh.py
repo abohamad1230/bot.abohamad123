@@ -1,5 +1,5 @@
 # سورس ابو حمد & خطر - النسخة النهائية
-# تم التطوير لـ Render
+# تم التطوير ل Render
 
 import os
 import asyncio
