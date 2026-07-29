@@ -28,30 +28,24 @@ def run_flask():
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
-# ===================== Keep-Alive (يمنع السيرفر من الإيقاف) =====================
 def keep_alive():
     url = f"http://localhost:{os.environ.get('PORT', 8080)}"
     while True:
         try:
             requests.get(url, timeout=5)
-            print(f"[Keep-Alive] ✅ تم إرسال طلب في {datetime.now().strftime('%H:%M:%S')}")
+            print(f"[Keep-Alive] تم إرسال طلب في {datetime.now().strftime('%H:%M:%S')}")
         except Exception as e:
-            print(f"[Keep-Alive] ❌ فشل: {e}")
-        time.sleep(300)  # 5 دقائق
+            print(f"[Keep-Alive] فشل: {e}")
+        time.sleep(300)
 
-# شغل Flask في خلفية
 threading.Thread(target=run_flask, daemon=True).start()
-
-# شغل Keep-Alive في خلفية
 threading.Thread(target=keep_alive, daemon=True).start()
 
-# ===================== متغيرات البيئة =====================
 API_ID = 34573152
 API_HASH = 'e585e8f003baf478de094345a0cc372a'
-MY_USER_ID = 8346034341
+MY_USER_ID = 6901525472
 STRING_SESSION = '1BJWap1wBu7rMy2qnq0rQnvVUigblf-p3A0M01XMolkMYWc-KuxGIX09mxd8K68N1ffc_kARGcEufnCiDhk_pM80DnNeB_DuDaJQB-ghnawlh4m_qYLxzL-9CTwrbrsODKn3fq02BTLUG8lywtri83HENhFHgEmaQ-8bJOLKUToBpJA295LcyoemykTASZIEo8V1vZiHj2wYOuyBZPiuZvbAP2VP8_YN344Vpu_E8_L6Tt092czNm2Zo3puNciwQxr3ZYeq8HviDHcgELUsySVGz4Hhiyax_4F1pttf8WJbdDyGLHhiETEYfj0y-wB0-nvmW7zNSkcVcNfoovQ2npqHvJYOdH2RY='
 
-# ===================== اعدادات السورس =====================
 spam_speed = 1.0
 spam_running = False
 spam_task = None
@@ -70,9 +64,6 @@ hit_running = False
 hit_task = None
 hit_reply_id = None
 
-# ===================== قوائم السطور =====================
-
-# قائمة سطور التسطير (تستخدم مع امر اصمل)
 SPAM_WORDS = [
     "يا ابن الشرموطه", "كس امك", "كس اختك", "ديوث", "هطف",
     "يا ابن المنيوكه ديوث", "قسم ب الله مسكين", "يابن الشرموطه",
@@ -89,7 +80,6 @@ SPAM_WORDS = [
     "يفحل امك", "يا ابن الخنزيره"
 ]
 
-# قائمة سطور الضرب (تستخدم مع امر اضربه)
 HIT_WORDS = [
     "اجلد كس اختك",
     "ي ابن الحيوانه",
@@ -108,7 +98,6 @@ HIT_WORDS = [
     "يـ نياك كس امك"
 ]
 
-# قائمة سطور نيك ام (تستخدم مع امر نيك ام وبعص امه)
 INSULT_STORAGE = [
     "تدري ان امك من كثر ما هي مستباحة، صارت متاحة للجميع مثل خدمات الطوارئ",
     "ابوك من كثر الدياثة كاتب في بايو الفيسبوك 'البيت بيتك والمدام تحت الخدمة'",
@@ -169,7 +158,6 @@ INSULT_STORAGE = [
     "أمك باعت ذهبها عشان تجيب لك جهاز تدير فيه مستقبلك، وآخرتها طالع هطف ومنبطح في كل التلي وما فالح إلا تصيح بالخاص ونمص كسمك",
 ]
 
-# قائمة سطور نيك ام مع اسم
 INSULT_WITH_NAME = [
     "يا {name} تدري ان طقعه امك تركيبها الكيميائي اعقد من لغز مثلث برمودا",
     "تدري يا {name} يا منبطح الصالة ان امك من كثر الرخص، منزلة تحديث جديد يوفر ميزة 'التوصيل السريع للمنازل'",
@@ -203,7 +191,6 @@ INSULT_WITH_NAME = [
     "ما انت يا {name} إلا حبة بندول منتهية الصلاحية، نجلد فيك طول السهرة ونمسح فيك البلاط وأنت تسلك وتقول 'أصلاً عادي' يا ابن المنحطة",
 ]
 
-# قائمة الرسائل المزروفة (تضاف عن طريق ازرفه)
 insult_list = []
 extended_insult_list = []
 whispered_messages = {}
@@ -276,10 +263,8 @@ class AntiRepeat:
 
 anti_repeat = AntiRepeat(repeat_limit=10)
 
-# ===================== تعريف الـ Client =====================
 client = TelegramClient(StringSession(STRING_SESSION), API_ID, API_HASH)
 
-# ===================== دوال تحميل يوتيوب وتيك توك =====================
 async def download_youtube_audio(query):
     try:
         if not os.path.exists('downloads'):
@@ -342,7 +327,6 @@ async def download_tiktok_video(url):
         print(f"خطأ في تحميل تيك توك: {e}")
         return None
 
-# ===================== دوال مساعدة =====================
 async def send_to_saved_messages(text):
     try:
         await client.send_message('me', text)
@@ -451,7 +435,6 @@ async def random_spam_loop(chat_id, speed):
             print(f"خطأ في التسطير العشوائي: {e}")
             await asyncio.sleep(1)
 
-# ===================== امر تحميل يوتيوب =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^يوت\s+(.+)$'))
 async def youtube_search(event):
     try:
@@ -475,7 +458,6 @@ async def youtube_search(event):
     except Exception as e:
         await event.edit(f"خطأ: {str(e)[:50]}")
 
-# ===================== امر تحميل تيك توك =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^تحميل تيك\s+(https?://[^\s]+)$'))
 async def download_tiktok(event):
     try:
@@ -492,7 +474,6 @@ async def download_tiktok(event):
     except Exception as e:
         await event.edit(f"خطأ: {str(e)[:50]}")
 
-# ===================== امر تحويل الميديا المؤقته =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^تحويل$'))
 async def convert_media(event):
     try:
@@ -566,7 +547,6 @@ async def convert_media(event):
     except Exception as e:
         await event.edit(f"خطأ: {str(e)[:50]}")
 
-# ===================== امر حذف رسايلي =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^حذف رسايلي$'))
 async def delete_my_messages(event):
     try:
@@ -594,7 +574,6 @@ async def delete_my_messages(event):
     except Exception as e:
         await send_to_saved_messages(f"خطأ في حذف الرسائل: {str(e)}")
 
-# ===================== مراقب حذف رسائل المكتمين =====================
 @client.on(events.NewMessage)
 async def delete_muted_messages(event):
     if event.out:
@@ -610,7 +589,6 @@ async def delete_muted_messages(event):
         except Exception as e:
             print(f"خطأ في حذف رسالة مكتم: {e}")
 
-# ===================== اوامر التسطير =====================
 @client.on(events.NewMessage(outgoing=True))
 async def dynamic_spam_handler(event):
     global spam_running, spam_task, spam_speed, spam_command, spam_count
@@ -655,7 +633,6 @@ async def dynamic_spam_handler(event):
             await send_to_saved_messages(f"خطأ في التسطير بالرد: {e}")
         return
 
-# ===================== اوامر نيك ام =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^نيك ام$'))
 async def insult_mom(event):
     global insult_running, insult_task, insult_reply_id
@@ -749,7 +726,6 @@ async def stop_insult(event):
     except Exception as e:
         await send_to_saved_messages(f"خطأ: {e}")
 
-# ===================== امر بعص امه =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^بعص امه$'))
 async def extended_insult(event):
     global extended_running, extended_task, extended_target
@@ -814,7 +790,6 @@ async def stop_extended(event):
     except Exception as e:
         await send_to_saved_messages(f"خطأ: {e}")
 
-# ===================== امر اضربه =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^اضربه$'))
 async def hit_command(event):
     global hit_running, hit_task, hit_reply_id
@@ -867,7 +842,6 @@ async def stop_hit(event):
     except Exception as e:
         await send_to_saved_messages(f"خطأ: {e}")
 
-# ===================== امر وقف الكل =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^وقف الكل$'))
 async def stop_all(event):
     global insult_running, extended_running, hit_running, spam_running
@@ -909,7 +883,6 @@ async def stop_all(event):
     except Exception as e:
         await send_to_saved_messages(f"خطأ: {e}")
 
-# ===================== اوامر السرعة =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^السرعة\s+(\d+\.?\d*)$'))
 async def set_speed(event):
     global spam_speed
@@ -942,7 +915,6 @@ async def stop_spam(event):
     except Exception as e:
         await send_to_saved_messages(f"خطأ: {e}")
 
-# ===================== اوامر الكتم =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^اخرس$'))
 async def mute_user_with_delete(event):
     try:
@@ -1012,7 +984,6 @@ async def mute_all_members(event):
     except Exception as e:
         await send_to_saved_messages(f"خطأ: {e}")
 
-# ===================== اوامر فك الكتم =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^تنفس$'))
 async def unmute_user_breath(event):
     try:
@@ -1101,7 +1072,6 @@ async def show_muted(event):
     except Exception as e:
         await event.edit(f"خطأ: {e}")
 
-# ===================== امر كشف الهمسه =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^كشف الهمسه$'))
 async def reveal_whisper(event):
     try:
@@ -1121,7 +1091,6 @@ async def reveal_whisper(event):
     except Exception as e:
         await event.respond(f"خطأ: {e}")
 
-# ===================== امر اذاعه =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^أذاعه$'))
 async def broadcast_reply(event):
     try:
@@ -1152,7 +1121,6 @@ async def broadcast_reply(event):
     except Exception as e:
         await event.respond(f"خطأ: {e}")
 
-# ===================== امر تفليش القروب =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^تفليش القروب$'))
 async def flush_group(event):
     try:
@@ -1183,7 +1151,6 @@ async def flush_group(event):
     except Exception as e:
         await event.respond(f"فشل التفليش: {str(e)}")
 
-# ===================== امر تغيير امر التسطير =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^تغيير امر التسطير (.+)$'))
 async def change_spam_command(event):
     global spam_command
@@ -1196,7 +1163,6 @@ async def change_spam_command(event):
     except Exception as e:
         await event.respond(f"خطأ: {e}")
 
-# ===================== امر ضبط عدد الكلمات =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^عدد الكلمات (\d+)$'))
 async def set_spam_count(event):
     global spam_count
@@ -1211,7 +1177,6 @@ async def set_spam_count(event):
     except Exception as e:
         await event.edit(f"خطأ: {e}")
 
-# ===================== قائمة السطور (إحصائيات) =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^قائمة السطور$'))
 async def show_lines_list(event):
     try:
@@ -1221,11 +1186,13 @@ async def show_lines_list(event):
         total_insult_list = len(insult_list) + len(extended_insult_list)
         
         response = f"احصائيات السطور:\n\n"
-        response += f"سطور نيك ام: {len(INSULT_STORAGE)}\n"
-        response += f"سطور مع اسم: {len(INSULT_WITH_NAME)}\n"
+        response += f"━━━━━━━━━━━━━━━━━━━━\n"
         response += f"سطور التسطير: {total_spam}\n"
         response += f"سطور اضربه: {total_hit}\n"
+        response += f"سطور نيك ام: {len(INSULT_STORAGE)}\n"
+        response += f"سطور مع اسم: {len(INSULT_WITH_NAME)}\n"
         response += f"سطور مزروفة: {total_insult_list}\n"
+        response += f"━━━━━━━━━━━━━━━━━━━━\n"
         response += f"المجموع الكلي: {total_insults + total_spam + total_hit + total_insult_list}\n\n"
         response += f"نظام منع التكرار: مفعل (اخر 10 سطور)\n"
         response += f"امر التسطير الحالي: {spam_command}\n"
@@ -1237,21 +1204,12 @@ async def show_lines_list(event):
     except Exception as e:
         await event.respond(f"خطأ: {e}")
 
-# ===================== اوامر اضافة السطور =====================
-@client.on(events.NewMessage(outgoing=True, pattern=r'^اضافه سطر ل نيك ام وبعص امه (.+)$'))
-async def add_insult_line(event):
-    try:
-        text = event.pattern_match.group(1).strip()
-        if len(text) < 3:
-            await event.edit("السطر قصير جداً! يجب أن يكون 3 أحرف على الأقل")
-            return
-        
-        INSULT_STORAGE.append(text)
-        INSULT_WITH_NAME.append(text)
-        await event.edit(f"تم إضافة السطر إلى قائمة سطور نيك ام وبعص امه\nالسطر: {text[:50]}...")
-        await send_to_saved_messages(f"تم إضافة سطر جديد لقائمة نيك ام وبعص امه\nالسطر: {text[:50]}...")
-    except Exception as e:
-        await event.respond(f"خطأ: {e}")
+def find_and_remove(lst, target):
+    for item in lst[:]:
+        if item.strip() == target.strip():
+            lst.remove(item)
+            return True
+    return False
 
 @client.on(events.NewMessage(outgoing=True, pattern=r'^اضافه سطر ل تسطير (.+)$'))
 async def add_spam_line(event):
@@ -1261,9 +1219,13 @@ async def add_spam_line(event):
             await event.edit("السطر قصير جداً! يجب أن يكون 3 أحرف على الأقل")
             return
         
+        if text in SPAM_WORDS:
+            await event.edit(f"السطر موجود بالفعل في قائمة التسطير\n{text[:50]}")
+            return
+        
         SPAM_WORDS.append(text)
-        await event.edit(f"تم إضافة السطر إلى قائمة سطور التسطير\nالسطر: {text[:50]}...")
-        await send_to_saved_messages(f"تم إضافة سطر جديد لقائمة التسطير\nالسطر: {text[:50]}...")
+        await event.edit(f"تم إضافة السطر إلى قائمة سطور التسطير\n{text[:50]}")
+        await send_to_saved_messages(f"تم إضافة سطر جديد لقائمة التسطير\n{text[:50]}")
     except Exception as e:
         await event.respond(f"خطأ: {e}")
 
@@ -1275,13 +1237,35 @@ async def add_hit_line(event):
             await event.edit("السطر قصير جداً! يجب أن يكون 3 أحرف على الأقل")
             return
         
+        if text in HIT_WORDS:
+            await event.edit(f"السطر موجود بالفعل في قائمة اضربه\n{text[:50]}")
+            return
+        
         HIT_WORDS.append(text)
-        await event.edit(f"تم إضافة السطر إلى قائمة سطور اضربه\nالسطر: {text[:50]}...")
-        await send_to_saved_messages(f"تم إضافة سطر جديد لقائمة اضربه\nالسطر: {text[:50]}...")
+        await event.edit(f"تم إضافة السطر إلى قائمة سطور اضربه\n{text[:50]}")
+        await send_to_saved_messages(f"تم إضافة سطر جديد لقائمة اضربه\n{text[:50]}")
     except Exception as e:
         await event.respond(f"خطأ: {e}")
 
-# ===================== اوامر حذف السطور =====================
+@client.on(events.NewMessage(outgoing=True, pattern=r'^اضافه سطر ل نيك ام وبعص امه (.+)$'))
+async def add_insult_line(event):
+    try:
+        text = event.pattern_match.group(1).strip()
+        if len(text) < 3:
+            await event.edit("السطر قصير جداً! يجب أن يكون 3 أحرف على الأقل")
+            return
+        
+        if text in INSULT_STORAGE:
+            await event.edit(f"السطر موجود بالفعل في قائمة نيك ام\n{text[:50]}")
+            return
+        
+        INSULT_STORAGE.append(text)
+        INSULT_WITH_NAME.append(text)
+        await event.edit(f"تم إضافة السطر إلى قائمة سطور نيك ام وبعص امه\n{text[:50]}")
+        await send_to_saved_messages(f"تم إضافة سطر جديد لقائمة نيك ام وبعص امه\n{text[:50]}")
+    except Exception as e:
+        await event.respond(f"خطأ: {e}")
+
 @client.on(events.NewMessage(outgoing=True, pattern=r'^حذف سطر (.+)$'))
 async def delete_line_command(event):
     try:
@@ -1293,50 +1277,42 @@ async def delete_line_command(event):
         deleted_count = 0
         deleted_from = []
         
-        # البحث والحذف من جميع القوائم
-        if text in INSULT_STORAGE:
-            INSULT_STORAGE.remove(text)
+        if find_and_remove(SPAM_WORDS, text):
+            deleted_count += 1
+            deleted_from.append("تسطير")
+        
+        if find_and_remove(HIT_WORDS, text):
+            deleted_count += 1
+            deleted_from.append("ضرب")
+        
+        if find_and_remove(INSULT_STORAGE, text):
             deleted_count += 1
             deleted_from.append("نيك ام")
         
-        if text in INSULT_WITH_NAME:
-            INSULT_WITH_NAME.remove(text)
+        if find_and_remove(INSULT_WITH_NAME, text):
             deleted_count += 1
             if "نيك ام" not in deleted_from:
                 deleted_from.append("نيك ام")
         
-        if text in SPAM_WORDS:
-            SPAM_WORDS.remove(text)
-            deleted_count += 1
-            deleted_from.append("تسطير")
-        
-        if text in HIT_WORDS:
-            HIT_WORDS.remove(text)
-            deleted_count += 1
-            deleted_from.append("ضرب")
-        
-        if text in insult_list:
-            insult_list.remove(text)
+        if find_and_remove(insult_list, text):
             deleted_count += 1
             if "مزروف" not in deleted_from:
                 deleted_from.append("مزروف")
         
-        if text in extended_insult_list:
-            extended_insult_list.remove(text)
+        if find_and_remove(extended_insult_list, text):
             deleted_count += 1
             if "مزروف" not in deleted_from:
                 deleted_from.append("مزروف")
         
         if deleted_count > 0:
-            await event.edit(f"تم حذف السطر من القوائم التالية: {', '.join(deleted_from)}\nالسطر: {text[:50]}")
-            await send_to_saved_messages(f"تم حذف سطر من {', '.join(deleted_from)}\nالسطر: {text[:50]}")
+            await event.edit(f"تم حذف السطر من: {', '.join(deleted_from)}\n{text[:50]}")
+            await send_to_saved_messages(f"تم حذف سطر من {', '.join(deleted_from)}\n{text[:50]}")
         else:
-            await event.edit(f"لم يتم العثور على السطر في أي قائمة\nالسطر: {text[:50]}")
+            await event.edit(f"لم يتم العثور على السطر في أي قائمة\n{text[:50]}")
             
     except Exception as e:
         await event.respond(f"خطأ: {e}")
 
-# ===================== امر عرض الرسائل المزروفه =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^عرض الرسائل المزروفه$'))
 async def show_insult_list(event):
     try:
@@ -1372,7 +1348,6 @@ async def show_insult_list(event):
     except Exception as e:
         await event.respond(f"خطأ: {e}")
 
-# ===================== امر احذف الرسائل المزروفه =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^احذف الرسائل المزروفه$'))
 async def clear_insult_list(event):
     global insult_list, extended_insult_list
@@ -1385,7 +1360,6 @@ async def clear_insult_list(event):
     except Exception as e:
         await event.respond(f"خطأ: {e}")
 
-# ===================== امر ازرفه =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^ازرفه$'))
 async def add_insult_to_list(event):
     try:
@@ -1401,13 +1375,12 @@ async def add_insult_to_list(event):
         insult_list.append(text)
         extended_insult_list.append(text)
         
-        await client.send_message(event.chat_id, f"تم إزرفة السطر وإضافته لقائمة نيك ام وبعص امه!\nالسطر: {text[:50]}...")
-        await send_to_saved_messages(f"تم ازرفة سطر جديد لقائمة نيك ام وبعص امه\nالسطر: {text[:50]}...")
+        await client.send_message(event.chat_id, f"تم إزرفة السطر وإضافته لقائمة نيك ام وبعص امه!\n{text[:50]}...")
+        await send_to_saved_messages(f"تم ازرفة سطر جديد لقائمة نيك ام وبعص امه\n{text[:50]}...")
         
     except Exception as e:
         await event.respond(f"خطأ: {e}")
 
-# ===================== امر المساعدة (قائمة الاوامر) =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^الاوامر$'))
 async def help_command(event):
     help_text = """
@@ -1465,13 +1438,13 @@ Welcome ~ قائمة أوامر سورس ابو حمد & خطر
 
 أوامر إضافة السطور:
 ━━━━━━━━━━━━━━━━━━━━━━━━━
-اضافه سطر ل نيك ام وبعص امه <النص>
 اضافه سطر ل تسطير <النص>
 اضافه سطر ل ضرب <النص>
+اضافه سطر ل نيك ام وبعص امه <النص>
 
 أوامر حذف السطور:
 ━━━━━━━━━━━━━━━━━━━━━━━━━
-حذف سطر <النص> - يحذف السطر من أي قائمة
+حذف سطر <النص> - يحذف السطر من أي قائمة (يبحث في كل القوائم)
 عرض الرسائل المزروفه - عرض السطور المزروفة
 احذف الرسائل المزروفه - حذف جميع السطور المزروفة
 ازرفه (رد) - إضافة السطر لقائمة نيك ام وبعص امه
@@ -1514,7 +1487,6 @@ Welcome ~ قائمة أوامر سورس ابو حمد & خطر
     await event.delete()
     await client.send_message(event.chat_id, help_text)
 
-# ===================== تشغيل السورس =====================
 async def main():
     global client
     
@@ -1522,28 +1494,29 @@ async def main():
     
     try:
         await client.start()
-        print("✅ تم الدخول إلى الحساب بنجاح!")
+        print("تم الدخول إلى الحساب بنجاح!")
     except Exception as e:
-        print(f"❌ خطأ في الدخول: {e}")
+        print(f"خطأ في الدخول: {e}")
         return
 
     me = await client.get_me()
-    print(f"✅ تم الدخول كـ: {me.first_name}")
-    print(f"🆔 الايدي: {me.id}")
+    print(f"تم الدخول كـ: {me.first_name}")
+    print(f"الايدي: {me.id}")
     
     print("=" * 50)
-    print("🔥 سورس ابو حمد & خطر يعمل الان!")
-    print(f"📊 عدد سطور نيك ام: {len(INSULT_STORAGE)}")
-    print(f"📊 عدد سطور اضربه: {len(HIT_WORDS)}")
-    print(f"📊 عدد كلمات التسطير: {len(SPAM_WORDS)}")
-    print(f"📌 امر التسطير الحالي: {spam_command}")
-    print(f"📌 عدد الكلمات الافتراضي: {spam_count}")
-    print(f"⚡ السرعة الافتراضية: {spam_speed} ثانية")
-    print("🔄 نظام منع التكرار: مفعل (اخر 10 سطور)")
-    print("📨 جميع الاشعارات ترسل للرسائل المحفوظة")
-    print("🛑 امر وقف الكل: يوقف جميع الهجمات دفعة واحدة")
-    print("🎵 بحث يوت: يبحث في يوتيوب")
-    print("🔁 Keep-Alive: يرسل طلب كل 5 دقائق لمنع الإيقاف")
+    print("سورس ابو حمد & خطر يعمل الان!")
+    print(f"سطور التسطير: {len(SPAM_WORDS)}")
+    print(f"سطور اضربه: {len(HIT_WORDS)}")
+    print(f"سطور نيك ام: {len(INSULT_STORAGE)}")
+    print(f"امر التسطير الحالي: {spam_command}")
+    print(f"عدد الكلمات الافتراضي: {spam_count}")
+    print(f"السرعة الافتراضية: {spam_speed} ثانية")
+    print("نظام منع التكرار: مفعل (اخر 10 سطور)")
+    print("جميع الاشعارات ترسل للرسائل المحفوظة")
+    print("امر وقف الكل: يوقف جميع الهجمات دفعة واحدة")
+    print("بحث يوت: يبحث في يوتيوب")
+    print("Keep-Alive: يرسل طلب كل 5 دقائق لمنع الإيقاف")
+    print("كل قائمة سطور لحالها (تسطير - ضرب - نيك ام)")
     print("=" * 50)
     
     await client.run_until_disconnected()
@@ -1552,6 +1525,6 @@ if __name__ == '__main__':
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n🛑 تم إيقاف السورس")
+        print("\nتم إيقاف السورس")
     except Exception as e:
-        print(f"❌ خطأ عام: {e}")
+        print(f"خطأ عام: {e}")
