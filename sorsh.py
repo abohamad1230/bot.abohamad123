@@ -11,16 +11,15 @@ from datetime import datetime, timedelta
 from telethon import TelegramClient, events, functions, types
 from telethon.errors import FloodWaitError, ChatAdminRequiredError
 from telethon.tl.types import Message
+from telethon.tl.types import InputBotInlineMessageText
+from telethon.tl.custom import InlineQueryResultArticle
+from telethon.events import InlineQuery
 from telethon.tl.functions.messages import GetHistoryRequest
 from telethon.sessions import StringSession
-from telethon.tl.types import InputBotInlineMessageText, InlineQueryResultArticle
-from telethon.events import InlineQuery
 import yt_dlp
 import requests
 from flask import Flask
 import threading
-import subprocess
-import sys
 
 app = Flask(__name__)
 
@@ -314,43 +313,6 @@ async def download_youtube_audio(query):
         print(f"خطأ في تحميل يوتيوب: {e}")
         return None
 
-async def download_music_spotify(query):
-    try:
-        if not os.path.exists('downloads'):
-            os.makedirs('downloads')
-        
-        # استخدام yt-dlp للبحث عن الاغنية في يوتيوب اولاً (لان سبوتيفاي يحتاج اشتراك)
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'outtmpl': 'downloads/%(title)s.%(ext)s',
-            'quiet': True,
-            'no_warnings': True,
-            'default_search': 'ytsearch1',
-            'noplaylist': True,
-            'ignoreerrors': True,
-        }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(query, download=True)
-            if info and 'entries' in info:
-                video = info['entries'][0]
-                filename = ydl.prepare_filename(video)
-                mp3_file = filename.replace('.webm', '.mp3').replace('.m4a', '.mp3')
-                if os.path.exists(mp3_file):
-                    return mp3_file
-                else:
-                    for f in os.listdir('downloads'):
-                        if f.endswith('.mp3'):
-                            return os.path.join('downloads', f)
-        return None
-    except Exception as e:
-        print(f"خطأ في تحميل من سبوتيفاي: {e}")
-        return None
-
 async def download_tiktok_video(url):
     try:
         api_url = f"https://www.tikwm.com/api/?url={url}"
@@ -483,7 +445,7 @@ async def random_spam_loop(chat_id, speed):
             print(f"خطأ في التسطير العشوائي: {e}")
             await asyncio.sleep(1)
 
-# ===================== امر تحميل يوتيوب وسبوتيفاي (معدل) =====================
+# ===================== امر تحميل يوتيوب =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^يوت\s+(.+)$'))
 async def youtube_search(event):
     try:
@@ -492,9 +454,8 @@ async def youtube_search(event):
             await event.edit("اكتب اسم الاغنيه او المقطع")
             return
         
-        await event.edit("جاري البحث عن المقطع وتحميله من يوتيوب وسبوتيفاي... يرجى الانتظار")
+        await event.edit("جاري البحث عن المقطع وتحميله... يرجى الانتظار")
         
-        # محاولة التحميل من يوتيوب اولاً
         audio_file = await download_youtube_audio(query)
         if audio_file and os.path.exists(audio_file):
             await client.send_file(event.chat_id, audio_file, caption="تم التحميل من يوتيوب")
@@ -503,21 +464,8 @@ async def youtube_search(event):
             except:
                 pass
             await event.delete()
-            return
-        
-        # لو فشل من يوتيوب، نحاول من سبوتيفاي (يستخدم يوتيوب للبحث)
-        await event.edit("جاري محاولة التحميل من مصادر اخرى...")
-        audio_file = await download_music_spotify(query)
-        if audio_file and os.path.exists(audio_file):
-            await client.send_file(event.chat_id, audio_file, caption="تم التحميل")
-            try:
-                os.remove(audio_file)
-            except:
-                pass
-            await event.delete()
-            return
-        
-        await event.edit("فشل التحميل، حاول مرة ثانية او تأكد من اسم الاغنيه")
+        else:
+            await event.edit("فشل التحميل، حاول مرة ثانية او تأكد من اسم الاغنيه")
     except Exception as e:
         await event.edit(f"خطأ: {str(e)[:50]}")
 
@@ -700,155 +648,6 @@ async def dynamic_spam_handler(event):
         except Exception as e:
             await send_to_saved_messages(f"خطأ في التسطير بالرد: {e}")
         return
-
-# ===================== القائمة المنسدلة (Inline Query) =====================
-@client.on(InlineQuery())
-async def inline_help(event):
-    if event.text.strip() != "اوامر":
-        return
-    
-    spam_text = """
-أوامر التسطير
-__________________
-
-اصمل - يقعد يسطر (بدون رد)
-اصمل مع ريبلاي - يقعد يسطره مع رد على نفس الرسالة
-
-تغيير امر التسطير <الامر الجديد> يعني الحين تبي تسطر بدون لا أحد يكشفك بيدك تغيير أمر التسطير كل شوي وعشان تغيره تكتب > تغيير امر التسطير كس اختك <
-الحين لو كتبت كس اختك ب يقعد يسطر بدال الأمر القديم الي هو اصمل
-
-عدد الكلمات <رقم> - ضبط عدد الكلمات (1-20)
-وقف جلد - إيقاف التسطير
-السرعة <رقم> - ضبط السرعة (0.1 ~ 10)
-"""
-
-    insult_text = """
-أوامر نيك ام ~ وبعص امه
-__________________
-
-نيك ام (رد) - بدء هجوم مستمر مع رد على رسالة الشخص
-نيك ام <اسم> - بدء هجوم مستمر باسم (مثال: نيك ام محمد)
-
-وقف نيك امه - يوقف نيك ام
-
-بعص امه (رد) - يرد على كل رسالة من الشخص في أي قروب (سطور نيك ام)
-وقف بعص امه - يوقف بعص فكسمه المخيس
-"""
-
-    hit_text = """
-أوامر اضربه
-__________________
-
-اضربه - يقعد يكتب سطور فرديات ب الشات (بدون رد)
-اضربه (رد) - يبدأ هجوم مستمر مع رد على رسالة الشخص
-وقف ضرب - إيقاف اضربه
-"""
-
-    stop_text = """
-أوامر التوقيف
-__________________
-
-وقف الكل - يوقف جميع الهجمات دفعة واحدة
-وقف بعص امه - يوقف بعص كسمه المخمج
-وقف نيك ام - يوقف نيك امه المخيس
-وقف جلد - يوقف تسطير
-وقف ضرب - يوقف الضرب
-"""
-
-    add_text = """
-أوامر إضافة السطور
-__________________
-
-اضافه سطر ل نيك ام وبعص امه <النص>
-اضافه سطر ل تسطير <النص>
-اضافه سطر ل ضرب <النص>
-"""
-
-    del_text = """
-أوامر حذف السطور
-__________________
-
-حذف سطر <النص> - يحذف السطر من أي قائمة
-عرض الرسائل المزروفه - عرض السطور المزروفة
-احذف الرسائل المزروفه - حذف جميع السطور المزروفة
-ازرفه (رد) - إضافة السطر لقائمة نيك ام وبعص امه
-"""
-
-    mute_text = """
-أوامر الكتم وفك الكتم
-__________________
-
-اخرس (رد) - يكتم الشخص ويحذف رسائله الجديدة
-اخرسس (رد) - تعدل لـ "اخرسسس ي ابن القحبه" + كتم
-اخرسو - كتم جميع الأعضاء في هذا الشات
-
-تنفس (رد) - فك كتم في هذا الشات
-تكلم يا ابن الزنوه (رد) - فك كتم في هذا الشات
-فك كتم الكل - فك كتم الكل
-"""
-
-    info_text = """
-معلومات السورس
-__________________
-
-نظام منع التكرار: مفعل (آخر 10 سطور)
-جميع الإشعارات ترسل للرسائل المحفوظة
-السرعة الحالية: 1.0 ثانية
-تم التطوير بواسطة سورس ابو حمد & خطر
-"""
-
-    results = [
-        InlineQueryResultArticle(
-            id="1",
-            title="أوامر التسطير",
-            description="افتح لتعرف أوامر التسطير...",
-            input_message_content=InputBotInlineMessageText(spam_text, parse_mode=None)
-        ),
-        InlineQueryResultArticle(
-            id="2",
-            title="أوامر نيك ام ~ وبعص امه",
-            description="افتح لتعرف أوامر النيك والبعص...",
-            input_message_content=InputBotInlineMessageText(insult_text, parse_mode=None)
-        ),
-        InlineQueryResultArticle(
-            id="3",
-            title="أوامر اضربه",
-            description="افتح لتعرف أوامر الضرب...",
-            input_message_content=InputBotInlineMessageText(hit_text, parse_mode=None)
-        ),
-        InlineQueryResultArticle(
-            id="4",
-            title="أوامر التوقيف",
-            description="افتح لتعرف أوامر وقف الهجمات...",
-            input_message_content=InputBotInlineMessageText(stop_text, parse_mode=None)
-        ),
-        InlineQueryResultArticle(
-            id="5",
-            title="أوامر إضافة السطور",
-            description="افتح لإضافة سطور جديدة...",
-            input_message_content=InputBotInlineMessageText(add_text, parse_mode=None)
-        ),
-        InlineQueryResultArticle(
-            id="6",
-            title="أوامر حذف السطور",
-            description="افتح لحذف السطور...",
-            input_message_content=InputBotInlineMessageText(del_text, parse_mode=None)
-        ),
-        InlineQueryResultArticle(
-            id="7",
-            title="أوامر الكتم",
-            description="افتح لتعرف أوامر الكتم والفك...",
-            input_message_content=InputBotInlineMessageText(mute_text, parse_mode=None)
-        ),
-        InlineQueryResultArticle(
-            id="8",
-            title="معلومات السورس",
-            description="افتح لتعرف إحصائيات السورس...",
-            input_message_content=InputBotInlineMessageText(info_text, parse_mode=None)
-        ),
-    ]
-
-    await event.answer(results, cache_time=0, switch_pm_text="Welcome ~ قائمة أوامر سورس ابو حمد & خطر")
 
 # ===================== اوامر نيك ام =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^نيك ام$'))
@@ -1519,7 +1318,7 @@ Welcome ~ قائمة أوامر سورس ابو حمد & خطر
 حذف رسايلي - حذف آخر 1000 رسالة من المحادثة (خاص أو قروب) عشان تتجنب الباند 
 
 حفظ الرسايل المؤقته - مثلا وحده عرضت لك صوره موقته تسوي رد على الرساله وتكتب تحويل يحفظ الصوره ويرسلها ب الرسايل المحفوظه 
-بحث يوت - تكتب يوت مع اسم الاغنيه يرسل لك المقطع mp3 (يبحث في يوتيوب وسبوتيفاي)
+بحث يوت - تكتب يوت مع اسم الاغنيه يرسل لك المقطع mp3 (يبحث في يوتيوب)
 تحميل تيك - تحميل تيك <رابط المقطع الي تبي تحمله > يحمل لك المقطع او الصوره ويرسلها في لك
 كشف الهمسه (رد) - كشف رسالة الهمسه
 أذاعه (رد) - إذاعة الرسالة للجميع
@@ -1538,6 +1337,155 @@ Welcome ~ قائمة أوامر سورس ابو حمد & خطر
     
     await event.delete()
     await client.send_message(event.chat_id, help_text)
+
+# ===================== القائمة المنسدلة (Inline Query) =====================
+@client.on(InlineQuery())
+async def inline_help(event):
+    if event.text.strip() != "اوامر":
+        return
+    
+    spam_text = """
+أوامر التسطير
+__________________
+
+اصمل - يقعد يسطر (بدون رد)
+اصمل مع ريبلاي - يقعد يسطره مع رد على نفس الرسالة
+
+تغيير امر التسطير <الامر الجديد> يعني الحين تبي تسطر بدون لا أحد يكشفك بيدك تغيير أمر التسطير كل شوي وعشان تغيره تكتب > تغيير امر التسطير كس اختك <
+الحين لو كتبت كس اختك ب يقعد يسطر بدال الأمر القديم الي هو اصمل
+
+عدد الكلمات <رقم> - ضبط عدد الكلمات (1-20)
+وقف جلد - إيقاف التسطير
+السرعة <رقم> - ضبط السرعة (0.1 ~ 10)
+"""
+
+    insult_text = """
+أوامر نيك ام ~ وبعص امه
+__________________
+
+نيك ام (رد) - بدء هجوم مستمر مع رد على رسالة الشخص
+نيك ام <اسم> - بدء هجوم مستمر باسم (مثال: نيك ام محمد)
+
+وقف نيك امه - يوقف نيك ام
+
+بعص امه (رد) - يرد على كل رسالة من الشخص في أي قروب (سطور نيك ام)
+وقف بعص امه - يوقف بعص فكسمه المخيس
+"""
+
+    hit_text = """
+أوامر اضربه
+__________________
+
+اضربه - يقعد يكتب سطور فرديات ب الشات (بدون رد)
+اضربه (رد) - يبدأ هجوم مستمر مع رد على رسالة الشخص
+وقف ضرب - إيقاف اضربه
+"""
+
+    stop_text = """
+أوامر التوقيف
+__________________
+
+وقف الكل - يوقف جميع الهجمات دفعة واحدة
+وقف بعص امه - يوقف بعص كسمه المخمج
+وقف نيك ام - يوقف نيك امه المخيس
+وقف جلد - يوقف تسطير
+وقف ضرب - يوقف الضرب
+"""
+
+    add_text = """
+أوامر إضافة السطور
+__________________
+
+اضافه سطر ل نيك ام وبعص امه <النص>
+اضافه سطر ل تسطير <النص>
+اضافه سطر ل ضرب <النص>
+"""
+
+    del_text = """
+أوامر حذف السطور
+__________________
+
+حذف سطر <النص> - يحذف السطر من أي قائمة
+عرض الرسائل المزروفه - عرض السطور المزروفة
+احذف الرسائل المزروفه - حذف جميع السطور المزروفة
+ازرفه (رد) - إضافة السطر لقائمة نيك ام وبعص امه
+"""
+
+    mute_text = """
+أوامر الكتم وفك الكتم
+__________________
+
+اخرس (رد) - يكتم الشخص ويحذف رسائله الجديدة
+اخرسس (رد) - تعدل لـ "اخرسسس ي ابن القحبه" + كتم
+اخرسو - كتم جميع الأعضاء في هذا الشات
+
+تنفس (رد) - فك كتم في هذا الشات
+تكلم يا ابن الزنوه (رد) - فك كتم في هذا الشات
+فك كتم الكل - فك كتم الكل
+"""
+
+    info_text = """
+معلومات السورس
+__________________
+
+نظام منع التكرار: مفعل (آخر 10 سطور)
+جميع الإشعارات ترسل للرسائل المحفوظة
+السرعة الحالية: 1.0 ثانية
+تم التطوير بواسطة سورس ابو حمد & خطر
+"""
+
+    results = [
+        InlineQueryResultArticle(
+            id="1",
+            title="أوامر التسطير",
+            description="افتح لتعرف أوامر التسطير...",
+            input_message_content=InputBotInlineMessageText(spam_text, parse_mode=None)
+        ),
+        InlineQueryResultArticle(
+            id="2",
+            title="أوامر نيك ام ~ وبعص امه",
+            description="افتح لتعرف أوامر النيك والبعص...",
+            input_message_content=InputBotInlineMessageText(insult_text, parse_mode=None)
+        ),
+        InlineQueryResultArticle(
+            id="3",
+            title="أوامر اضربه",
+            description="افتح لتعرف أوامر الضرب...",
+            input_message_content=InputBotInlineMessageText(hit_text, parse_mode=None)
+        ),
+        InlineQueryResultArticle(
+            id="4",
+            title="أوامر التوقيف",
+            description="افتح لتعرف أوامر وقف الهجمات...",
+            input_message_content=InputBotInlineMessageText(stop_text, parse_mode=None)
+        ),
+        InlineQueryResultArticle(
+            id="5",
+            title="أوامر إضافة السطور",
+            description="افتح لإضافة سطور جديدة...",
+            input_message_content=InputBotInlineMessageText(add_text, parse_mode=None)
+        ),
+        InlineQueryResultArticle(
+            id="6",
+            title="أوامر حذف السطور",
+            description="افتح لحذف السطور...",
+            input_message_content=InputBotInlineMessageText(del_text, parse_mode=None)
+        ),
+        InlineQueryResultArticle(
+            id="7",
+            title="أوامر الكتم",
+            description="افتح لتعرف أوامر الكتم والفك...",
+            input_message_content=InputBotInlineMessageText(mute_text, parse_mode=None)
+        ),
+        InlineQueryResultArticle(
+            id="8",
+            title="معلومات السورس",
+            description="افتح لتعرف إحصائيات السورس...",
+            input_message_content=InputBotInlineMessageText(info_text, parse_mode=None)
+        ),
+    ]
+
+    await event.answer(results, cache_time=0, switch_pm_text="Welcome ~ قائمة أوامر سورس ابو حمد & خطر")
 
 # ===================== تشغيل السورس =====================
 async def main():
@@ -1567,7 +1515,7 @@ async def main():
     print("🔄 نظام منع التكرار: مفعل (اخر 10 سطور)")
     print("📨 جميع الاشعارات ترسل للرسائل المحفوظة")
     print("🛑 امر وقف الكل: يوقف جميع الهجمات دفعة واحدة")
-    print("🎵 بحث يوت: يبحث في يوتيوب وسبوتيفاي")
+    print("🎵 بحث يوت: يبحث في يوتيوب")
     print("=" * 50)
     
     await client.run_until_disconnected()
