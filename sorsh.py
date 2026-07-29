@@ -1,7 +1,6 @@
-# سورس ابو حمد & خطر - النسخة النهائية مع Flask لـ Render
+# سورس ابو حمد & خطر - النسخة النهائية
+# تم التطوير لـ Render
 
-from flask import Flask
-import threading
 import os
 import asyncio
 import re
@@ -16,6 +15,8 @@ from telethon.tl.functions.messages import GetHistoryRequest
 from telethon.sessions import StringSession
 import yt_dlp
 import requests
+from flask import Flask
+import threading
 
 app = Flask(__name__)
 
@@ -27,7 +28,6 @@ def run_flask():
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
-# شغل الفلاسك في الخلفية
 threading.Thread(target=run_flask, daemon=True).start()
 
 # ===================== متغيرات البيئة =====================
@@ -55,35 +55,9 @@ hit_running = False
 hit_task = None
 hit_reply_id = None
 
-insult_list = []
-extended_insult_list = []
-whispered_messages = {}
+# ===================== قوائم السطور =====================
 
-MUTED_FILE = 'muted.json'
-muted_users = {}
-muted_tasks = {}
-
-def load_muted():
-    global muted_users
-    if os.path.exists(MUTED_FILE):
-        try:
-            with open(MUTED_FILE, 'r', encoding='utf-8') as f:
-                muted_users = json.load(f)
-                print(f"تم تحميل {sum(len(users) for users in muted_users.values())} مكتم")
-        except:
-            muted_users = {}
-    else:
-        muted_users = {}
-
-def save_muted():
-    try:
-        with open(MUTED_FILE, 'w', encoding='utf-8') as f:
-            json.dump(muted_users, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"خطأ في حفظ المكتمين: {e}")
-
-load_muted()
-
+# قائمة سطور التسطير (تستخدم مع امر اصمل)
 SPAM_WORDS = [
     "يا ابن الشرموطه", "كس امك", "كس اختك", "ديوث", "هطف",
     "يا ابن المنيوكه ديوث", "قسم ب الله مسكين", "يابن الشرموطه",
@@ -100,6 +74,7 @@ SPAM_WORDS = [
     "يفحل امك", "يا ابن الخنزيره"
 ]
 
+# قائمة سطور الضرب (تستخدم مع امر اضربه)
 HIT_WORDS = [
     "اجلد كس اختك",
     "ي ابن الحيوانه",
@@ -118,6 +93,7 @@ HIT_WORDS = [
     "يـ نياك كس امك"
 ]
 
+# قائمة سطور نيك ام (تستخدم مع امر نيك ام وبعص امه)
 INSULT_STORAGE = [
     "تدري ان امك من كثر ما هي مستباحة، صارت متاحة للجميع مثل خدمات الطوارئ",
     "ابوك من كثر الدياثة كاتب في بايو الفيسبوك 'البيت بيتك والمدام تحت الخدمة'",
@@ -178,6 +154,7 @@ INSULT_STORAGE = [
     "أمك باعت ذهبها عشان تجيب لك جهاز تدير فيه مستقبلك، وآخرتها طالع هطف ومنبطح في كل التلي وما فالح إلا تصيح بالخاص ونمص كسمك",
 ]
 
+# قائمة سطور نيك ام مع اسم
 INSULT_WITH_NAME = [
     "يا {name} تدري ان طقعه امك تركيبها الكيميائي اعقد من لغز مثلث برمودا",
     "تدري يا {name} يا منبطح الصالة ان امك من كثر الرخص، منزلة تحديث جديد يوفر ميزة 'التوصيل السريع للمنازل'",
@@ -211,6 +188,36 @@ INSULT_WITH_NAME = [
     "ما انت يا {name} إلا حبة بندول منتهية الصلاحية، نجلد فيك طول السهرة ونمسح فيك البلاط وأنت تسلك وتقول 'أصلاً عادي' يا ابن المنحطة",
 ]
 
+# قائمة الرسائل المزروفة (تضاف عن طريق ازرفه)
+insult_list = []
+extended_insult_list = []
+whispered_messages = {}
+
+MUTED_FILE = 'muted.json'
+muted_users = {}
+muted_tasks = {}
+
+def load_muted():
+    global muted_users
+    if os.path.exists(MUTED_FILE):
+        try:
+            with open(MUTED_FILE, 'r', encoding='utf-8') as f:
+                muted_users = json.load(f)
+                print(f"تم تحميل {sum(len(users) for users in muted_users.values())} مكتم")
+        except:
+            muted_users = {}
+    else:
+        muted_users = {}
+
+def save_muted():
+    try:
+        with open(MUTED_FILE, 'w', encoding='utf-8') as f:
+            json.dump(muted_users, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"خطأ في حفظ المكتمين: {e}")
+
+load_muted()
+
 class AntiRepeat:
     def __init__(self, repeat_limit=10):
         self.repeat_limit = repeat_limit
@@ -239,15 +246,15 @@ class AntiRepeat:
             message = self.shuffled_list[self.current_index]
             self.current_index += 1
             
-            if name and '{name}' in message:
-                message = message.replace('{name}', name)
-                
-            self.last_10_messages.append(message)
-            if len(self.last_10_messages) > 10:
-                self.last_10_messages.pop(0)
-                
-            self.message_count += 1
-            return message
+        if name and '{name}' in message:
+            message = message.replace('{name}', name)
+            
+        self.last_10_messages.append(message)
+        if len(self.last_10_messages) > 10:
+            self.last_10_messages.pop(0)
+            
+        self.message_count += 1
+        return message
             
         self.shuffle_list(insult_list)
         return self.get_next_message(insult_list, name)
@@ -275,18 +282,24 @@ async def download_youtube_audio(query):
             'no_warnings': True,
             'default_search': 'ytsearch',
             'noplaylist': True,
+            'ignoreerrors': True,
+            'extract_flat': False,
+            'cookiefile': '/dev/null',
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(query, download=True)
-            if 'entries' in info:
-                video = info['entries'][0]
-                filename = ydl.prepare_filename(video)
-                mp3_file = filename.replace('.webm', '.mp3').replace('.m4a', '.mp3')
-                return mp3_file
-            else:
-                filename = ydl.prepare_filename(info)
-                mp3_file = filename.replace('.webm', '.mp3').replace('.m4a', '.mp3')
-                return mp3_file
+            info = ydl.extract_info(f"ytsearch:{query}", download=True)
+            if info and 'entries' in info:
+                for video in info['entries']:
+                    if video:
+                        filename = ydl.prepare_filename(video)
+                        mp3_file = filename.replace('.webm', '.mp3').replace('.m4a', '.mp3')
+                        if os.path.exists(mp3_file):
+                            return mp3_file
+                        for f in os.listdir('downloads'):
+                            if f.endswith('.mp3'):
+                                return os.path.join('downloads', f)
+        return None
     except Exception as e:
         print(f"خطأ في تحميل يوتيوب: {e}")
         return None
@@ -432,18 +445,18 @@ async def youtube_search(event):
             await event.edit("اكتب اسم الاغنيه او المقطع")
             return
         
-        await event.edit("جاري البحث عن المقطع وتحميله...")
+        await event.edit("جاري البحث عن المقطع وتحميله... يرجى الانتظار")
         
         audio_file = await download_youtube_audio(query)
         if audio_file and os.path.exists(audio_file):
-            await client.send_file(event.chat_id, audio_file, caption=f"تم التحميل من يوتيوب")
+            await client.send_file(event.chat_id, audio_file, caption="تم التحميل من يوتيوب")
             try:
                 os.remove(audio_file)
             except:
                 pass
             await event.delete()
         else:
-            await event.edit("فشل التحميل، حاول مرة ثانية")
+            await event.edit("فشل التحميل، حاول مرة ثانية او تأكد من اسم الاغنيه")
     except Exception as e:
         await event.edit(f"خطأ: {str(e)[:50]}")
 
@@ -1183,7 +1196,7 @@ async def set_spam_count(event):
     except Exception as e:
         await event.edit(f"خطأ: {e}")
 
-# ===================== امر قائمة السطور =====================
+# ===================== قائمة السطور (إحصائيات) =====================
 @client.on(events.NewMessage(outgoing=True, pattern=r'^قائمة السطور$'))
 async def show_lines_list(event):
     try:
@@ -1205,6 +1218,176 @@ async def show_lines_list(event):
         response += f"السرعة الحالية: {spam_speed} ثانية\n"
         
         await event.edit(response)
+        
+    except Exception as e:
+        await event.respond(f"خطأ: {e}")
+
+# ===================== اوامر اضافة السطور =====================
+@client.on(events.NewMessage(outgoing=True, pattern=r'^اضافه سطر ل نيك ام وبعص امه (.+)$'))
+async def add_insult_line(event):
+    try:
+        text = event.pattern_match.group(1).strip()
+        if len(text) < 3:
+            await event.edit("السطر قصير جداً! يجب أن يكون 3 أحرف على الأقل")
+            return
+        
+        INSULT_STORAGE.append(text)
+        INSULT_WITH_NAME.append(text)
+        await event.edit(f"تم إضافة السطر إلى قائمة سطور نيك ام وبعص امه\nالسطر: {text[:50]}...")
+        await send_to_saved_messages(f"تم إضافة سطر جديد لقائمة نيك ام وبعص امه\nالسطر: {text[:50]}...")
+    except Exception as e:
+        await event.respond(f"خطأ: {e}")
+
+@client.on(events.NewMessage(outgoing=True, pattern=r'^اضافه سطر ل تسطير (.+)$'))
+async def add_spam_line(event):
+    try:
+        text = event.pattern_match.group(1).strip()
+        if len(text) < 3:
+            await event.edit("السطر قصير جداً! يجب أن يكون 3 أحرف على الأقل")
+            return
+        
+        SPAM_WORDS.append(text)
+        await event.edit(f"تم إضافة السطر إلى قائمة سطور التسطير\nالسطر: {text[:50]}...")
+        await send_to_saved_messages(f"تم إضافة سطر جديد لقائمة التسطير\nالسطر: {text[:50]}...")
+    except Exception as e:
+        await event.respond(f"خطأ: {e}")
+
+@client.on(events.NewMessage(outgoing=True, pattern=r'^اضافه سطر ل ضرب (.+)$'))
+async def add_hit_line(event):
+    try:
+        text = event.pattern_match.group(1).strip()
+        if len(text) < 3:
+            await event.edit("السطر قصير جداً! يجب أن يكون 3 أحرف على الأقل")
+            return
+        
+        HIT_WORDS.append(text)
+        await event.edit(f"تم إضافة السطر إلى قائمة سطور اضربه\nالسطر: {text[:50]}...")
+        await send_to_saved_messages(f"تم إضافة سطر جديد لقائمة اضربه\nالسطر: {text[:50]}...")
+    except Exception as e:
+        await event.respond(f"خطأ: {e}")
+
+# ===================== اوامر حذف السطور =====================
+@client.on(events.NewMessage(outgoing=True, pattern=r'^حذف سطر (.+)$'))
+async def delete_line_command(event):
+    try:
+        text = event.pattern_match.group(1).strip()
+        if len(text) < 2:
+            await event.edit("النص قصير جداً!")
+            return
+        
+        deleted_count = 0
+        deleted_from = []
+        
+        # البحث والحذف من جميع القوائم
+        if text in INSULT_STORAGE:
+            INSULT_STORAGE.remove(text)
+            deleted_count += 1
+            deleted_from.append("نيك ام")
+        
+        if text in INSULT_WITH_NAME:
+            INSULT_WITH_NAME.remove(text)
+            deleted_count += 1
+            if "نيك ام" not in deleted_from:
+                deleted_from.append("نيك ام")
+        
+        if text in SPAM_WORDS:
+            SPAM_WORDS.remove(text)
+            deleted_count += 1
+            deleted_from.append("تسطير")
+        
+        if text in HIT_WORDS:
+            HIT_WORDS.remove(text)
+            deleted_count += 1
+            deleted_from.append("ضرب")
+        
+        if text in insult_list:
+            insult_list.remove(text)
+            deleted_count += 1
+            if "مزروف" not in deleted_from:
+                deleted_from.append("مزروف")
+        
+        if text in extended_insult_list:
+            extended_insult_list.remove(text)
+            deleted_count += 1
+            if "مزروف" not in deleted_from:
+                deleted_from.append("مزروف")
+        
+        if deleted_count > 0:
+            await event.edit(f"تم حذف السطر من القوائم التالية: {', '.join(deleted_from)}\nالسطر: {text[:50]}")
+            await send_to_saved_messages(f"تم حذف سطر من {', '.join(deleted_from)}\nالسطر: {text[:50]}")
+        else:
+            await event.edit(f"لم يتم العثور على السطر في أي قائمة\nالسطر: {text[:50]}")
+            
+    except Exception as e:
+        await event.respond(f"خطأ: {e}")
+
+# ===================== امر عرض الرسائل المزروفه =====================
+@client.on(events.NewMessage(outgoing=True, pattern=r'^عرض الرسائل المزروفه$'))
+async def show_insult_list(event):
+    try:
+        if not insult_list and not extended_insult_list:
+            await event.edit("لا توجد رسائل مزروفة!")
+            return
+        
+        response = "قائمة الرسائل المزروفه:\n\n"
+        response += "━━━━━━━━━━━━━━━━━━━━\n"
+        
+        if insult_list:
+            response += "سطور نيك ام وبعص امه:\n"
+            for i, line in enumerate(insult_list, 1):
+                response += f"{i}. {line[:60]}{'...' if len(line) > 60 else ''}\n"
+            response += "\n"
+        
+        if extended_insult_list:
+            response += "سطور إضافية:\n"
+            for i, line in enumerate(extended_insult_list, 1):
+                response += f"{i}. {line[:60]}{'...' if len(line) > 60 else ''}\n"
+        
+        response += "━━━━━━━━━━━━━━━━━━━━\n"
+        response += f"المجموع: {len(insult_list) + len(extended_insult_list)} سطر"
+        
+        if len(response) > 4000:
+            parts = [response[i:i+4000] for i in range(0, len(response), 4000)]
+            await event.edit(parts[0])
+            for part in parts[1:]:
+                await client.send_message(event.chat_id, part)
+        else:
+            await event.edit(response)
+            
+    except Exception as e:
+        await event.respond(f"خطأ: {e}")
+
+# ===================== امر احذف الرسائل المزروفه =====================
+@client.on(events.NewMessage(outgoing=True, pattern=r'^احذف الرسائل المزروفه$'))
+async def clear_insult_list(event):
+    global insult_list, extended_insult_list
+    try:
+        count = len(insult_list) + len(extended_insult_list)
+        insult_list.clear()
+        extended_insult_list.clear()
+        await event.edit(f"تم حذف {count} سطر مزروف!")
+        await send_to_saved_messages(f"تم حذف {count} سطر مزروف")
+    except Exception as e:
+        await event.respond(f"خطأ: {e}")
+
+# ===================== امر ازرفه =====================
+@client.on(events.NewMessage(outgoing=True, pattern=r'^ازرفه$'))
+async def add_insult_to_list(event):
+    try:
+        reply = await event.get_reply_message()
+        if not reply:
+            await event.edit("يرجى الرد على رسالة لإزرفتها!")
+            return
+        
+        await event.edit("تم ازرفة السطر وإضافته لقائمة نيك ام وبعص امه")
+        
+        text = reply.text
+        
+        insult_list.append(text)
+        extended_insult_list.append(text)
+        
+        await client.send_message(event.chat_id, f"تم إزرفة السطر وإضافته لقائمة نيك ام وبعص امه!\nالسطر: {text[:50]}...")
+        await send_to_saved_messages(f"تم ازرفة سطر جديد لقائمة نيك ام وبعص امه\nالسطر: {text[:50]}...")
         
     except Exception as e:
         await event.respond(f"خطأ: {e}")
@@ -1296,7 +1479,7 @@ Welcome ~ قائمة أوامر سورس ابو حمد & خطر
 حذف رسايلي - حذف آخر 1000 رسالة من المحادثة (خاص أو قروب) عشان تتجنب الباند 
 
 حفظ الرسايل المؤقته - مثلا وحده عرضت لك صوره موقته تسوي رد على الرساله وتكتب تحويل يحفظ الصوره ويرسلها ب الرسايل المحفوظه 
-بحث يوت - تكتب يوت مع اسم الاغنيه يرسل لك المقطع mp3 
+بحث يوت - تكتب يوت مع اسم الاغنيه يرسل لك المقطع mp3 (يبحث في يوتيوب)
 تحميل تيك - تحميل تيك <رابط المقطع الي تبي تحمله > يحمل لك المقطع او الصوره ويرسلها في لك
 كشف الهمسه (رد) - كشف رسالة الهمسه
 أذاعه (رد) - إذاعة الرسالة للجميع
@@ -1312,7 +1495,9 @@ Welcome ~ قائمة أوامر سورس ابو حمد & خطر
 
 تم التطوير بواسطة سورس ابو حمد & خطر
     """.format(spam_speed=spam_speed)
-    await event.edit(help_text)
+    
+    await event.delete()
+    await client.send_message(event.chat_id, help_text)
 
 # ===================== تشغيل السورس =====================
 async def main():
@@ -1342,6 +1527,7 @@ async def main():
     print("🔄 نظام منع التكرار: مفعل (اخر 10 سطور)")
     print("📨 جميع الاشعارات ترسل للرسائل المحفوظة")
     print("🛑 امر وقف الكل: يوقف جميع الهجمات دفعة واحدة")
+    print("🎵 بحث يوت: يبحث في يوتيوب")
     print("=" * 50)
     
     await client.run_until_disconnected()
