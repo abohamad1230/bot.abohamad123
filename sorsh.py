@@ -7,6 +7,8 @@ import re
 import time
 import random
 import json
+import threading
+import requests
 from datetime import datetime, timedelta
 from telethon import TelegramClient, events, functions, types
 from telethon.errors import FloodWaitError, ChatAdminRequiredError
@@ -14,9 +16,7 @@ from telethon.tl.types import Message
 from telethon.tl.functions.messages import GetHistoryRequest
 from telethon.sessions import StringSession
 import yt_dlp
-import requests
 from flask import Flask
-import threading
 
 app = Flask(__name__)
 
@@ -28,7 +28,22 @@ def run_flask():
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
+# ===================== Keep-Alive (يمنع السيرفر من الإيقاف) =====================
+def keep_alive():
+    url = f"http://localhost:{os.environ.get('PORT', 8080)}"
+    while True:
+        try:
+            requests.get(url, timeout=5)
+            print(f"[Keep-Alive] ✅ تم إرسال طلب في {datetime.now().strftime('%H:%M:%S')}")
+        except Exception as e:
+            print(f"[Keep-Alive] ❌ فشل: {e}")
+        time.sleep(300)  # 5 دقائق
+
+# شغل Flask في خلفية
 threading.Thread(target=run_flask, daemon=True).start()
+
+# شغل Keep-Alive في خلفية
+threading.Thread(target=keep_alive, daemon=True).start()
 
 # ===================== متغيرات البيئة =====================
 API_ID = 34573152
@@ -246,15 +261,15 @@ class AntiRepeat:
             message = self.shuffled_list[self.current_index]
             self.current_index += 1
             
-        if name and '{name}' in message:
-            message = message.replace('{name}', name)
-            
-        self.last_10_messages.append(message)
-        if len(self.last_10_messages) > 10:
-            self.last_10_messages.pop(0)
-            
-        self.message_count += 1
-        return message
+            if name and '{name}' in message:
+                message = message.replace('{name}', name)
+                
+            self.last_10_messages.append(message)
+            if len(self.last_10_messages) > 10:
+                self.last_10_messages.pop(0)
+                
+            self.message_count += 1
+            return message
             
         self.shuffle_list(insult_list)
         return self.get_next_message(insult_list, name)
@@ -1528,6 +1543,7 @@ async def main():
     print("📨 جميع الاشعارات ترسل للرسائل المحفوظة")
     print("🛑 امر وقف الكل: يوقف جميع الهجمات دفعة واحدة")
     print("🎵 بحث يوت: يبحث في يوتيوب")
+    print("🔁 Keep-Alive: يرسل طلب كل 5 دقائق لمنع الإيقاف")
     print("=" * 50)
     
     await client.run_until_disconnected()
